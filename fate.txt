@@ -1,0 +1,16 @@
+GoTo,0,Advance to 'Go'.,0
+GoTo,23,Advance to Idaho Ave.,0
+GoTo,11,Advance to St. Peters Place.,0
+GoTo,U,Advance to nearest Utility.,0
+GoTo,R,Advance to nearest Railroad.,0
+GoTo,39,Take a walk on the Boardwalk.,0
+GoTo,5,Take a trip to Redding Railroad.,0
+Get,50,Government bonds pay you dividend of $50.,0
+Get,-15,Pay speeding ticket of $15.,0
+Get,150,You get $150 interest on your loan.,0
+Get,100,You won $100 on a scratch off.,0
+Back,3,Go back 3 spaces.,0
+Back,4,Go back 4 spaces.,0
+Pay,50,You have been elected Chairman. Pay each player $50.,0
+Jail,0,Go directly to jail.,0
+Card,0,Get Out of Jail Free.,0
