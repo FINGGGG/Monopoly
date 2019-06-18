@@ -9,6 +9,9 @@ import random
 
 ##---------- FUNCTIONS ----------##
 ## ---> Position Funcs <--- ##
+
+#  handles rolling the dice, checking for double, and returns an array
+# containing the result and whether it was a double or not.
 def roll():
     #return [1, 0]
     d1 = random.randint(1,6)
@@ -24,35 +27,47 @@ def roll():
     res = [d1 + d2,0]
     return res
 
+# Called when the player passes Go, it gives them $200.
 def passGo(player):
     print("%s passed Go!" % (player.name))
-    player.money = player.money + 200
+    #player.money = player.money + 200
+    changeMoney(player, 200)
 
+# Allows changing the position of the player.
 def changePos(player, pos, board):
     #print(player.status(), pos)
     if (int(pos) < player.position):
         if (player.jail == 0):
             passGo(player)
+
     if player.position >= 40:
         player.position = player.position - 40
+
         if (player.jail == 0):
             passGo(player)
+
     if player.position < 1:
         player.position = 40 - player.position
+
     player.position = int(pos)
     player.posName = board.places[player.position][1]
     whatDo(player, board)
 
+# Determines the position of the player based on their roll.
 def detPos(player, roll, board):
     #print(player.position)
     player.position = int(player.position) + int(roll)
     #print(player.position)
+
     if player.position < 1:
         player.position = 40 - player.position
+
     if player.position >= 40:
         player.position = player.position - 40
+
         if (player.jail == 0):
             passGo(player)
+
     #print(player.position)
     currSpace = board.places[player.position]
     player.posName = currSpace[1]
@@ -60,6 +75,7 @@ def detPos(player, roll, board):
 
 ## ---> Space Specific Funcs <--- ##
 
+# Calls the relevant func based on what type of space they land on.
 def whatDo(player, board):
     #print("whatDo: %s" % (player.name))
     #print(player.status())
@@ -67,36 +83,48 @@ def whatDo(player, board):
     wholeSpot = board.places[player.position]
     #print("wholeSpot:", wholeSpot[8])
     #if (spot == "Go"):
+
     if (spot == "Prop" or spot == "Util" or spot == "RR"):
         landOnProp(player, wholeSpot, board)
+
     elif (spot == "Tax"):
         landOnTax(player, wholeSpot)
+
     elif (spot == "Fate"):
         landOnFate(player, board)
+
     elif (spot == "Crate"):
         landOnCrate(player, board)
+
     elif (spot == "GoToJail"):
         landOnJail(player, board)
 
     return
 
+# Handles when the player lands on the Go To Jail space.
 def landOnJail(player, board):
     print("%s went to jail!" % (player.name))
     player.jail = 1
     return
 
+# Handles when the player lands on a Community Crate space.
 def landOnCrate(player, board):
     avail = []
     found = 0
     counter = 0
+
     for c in board.crate:
         if c[3] == 0:
             avail.append(c)
             found = 1
         counter = counter + 1
 
+    # If all cards are used, reset the card deck.
     if found == 0:
         avail = board.crate
+        for c in board.crate:
+            c[3] == 1
+
 
     randNum = random.randint(0, counter - 1)
     given = avail[randNum]
@@ -104,6 +132,7 @@ def landOnCrate(player, board):
     #print(given)
     return
 
+# Handles when the player lands on a Fate space.
 def landOnFate(player, board):
     avail = []
     found = 0
@@ -114,8 +143,11 @@ def landOnFate(player, board):
             found = 1
         counter = counter + 1
 
+    # If all cards are used, reset the card deck.
     if found == 0:
         avail = board.fate
+        for c in board.crate:
+            c[3] == 1
 
     randNum = random.randint(0, counter - 1)
     given = avail[randNum]
@@ -123,13 +155,14 @@ def landOnFate(player, board):
     #print(given)
     return
 
+# Handles when the player lands on a Tax space.
 def landOnTax(player, position):
     amt = position[3]
     player.money = int(player.money) - int(amt)
     print("%s has paid $%s in tax." % (player.name, amt))
     return
 
-
+# Handles when the player lands on a Property space.
 def landOnProp(player, position, board):
     typ = position[0]
     if (typ == "Prop"):
@@ -143,44 +176,57 @@ def landOnProp(player, position, board):
         if (player.money < int(position[3])):
             print("Could not afford this %s." % (typ))
             return
-        print("(Color: %s, Owned of this color: %s out of %s available and %s possible)" % (position[2], colOwned(player, position), totColOwned(position, board), position[9]))
+
+        print("(Color: %s, Owned of this color: %s out of %s available and %s total)" % (position[2], colOwned(player, position), totColOwned(position, board), position[9]))
         choice = input("This %s is not owned and costs $%s (you have $%s), to purchase, press y. To decline, press any other key.\n" % (typ, int(position[3]), player.money))
+
         if (choice == "y" or choice == "Y"):
             board.places[player.position][8] = 1
             player.properties.append(position)
             player.money = player.money - int(position[3])
             print("%s purchased %s" % (player.name, position[1]))
+
             if (board.places[player.position][0] == "RR"):
                 player.rrs = player.rrs + 1
+
             if (board.places[player.position][0] == "Util"):
                 player.utils = player.utils + 1
             return
+
     if (int(position[8]) == 1):
         if position in player.properties:
             print("%s owns this %s." % (player.name, typ))
+
         else:
             payRentProp(player, position, board)
-
     return
 
 ## ---> Other Funcs <--- ##
+
+# Returns the number of a certain Color are owned by all players based on
+# the Color from the current position.
 def totColOwned(position, board):
     counter = int(position[9])
     col = position[2]
+
     for pla in board.players:
         for prop in pla.properties:
             if prop[2] == col:
                 counter = counter - 1
     return counter
 
+# Returns the number of a certain Color are owned by THE player based on
+# the Color from the current position.
 def colOwned(player, position):
     counter = 0
     col = position[2]
+
     for prop in player.properties:
         if prop[2] == col:
             counter = counter + 1
     return counter
 
+# Called when the player uses a card.
 def useCard(given, player, board):
     #print(given, player.status())
     typ = str(given[0])
@@ -250,19 +296,26 @@ def payRentProp(player, position, board):
                 print("%s has paid %s $%s in rent." % (player.name, p.name, amt))
                 return
 
+#  handles a player's turn while they are in jail.
 def jail(player, board):
     changePos(player, 10, board)
+
+    # If player has been in jail for 3 or more turns, release them.
     if (player.jail >= 3):
         print("Jail time served.")
         player.jail = 0
         turn(player, board)
         return
 
+    # If they haven't, they can choose to roll for doubles, use GooJF Card, or Pay.
     while True:
         choice = input("(R)oll dice, (U)se card, or (P)ay $50 fine.\n")
+
         if (choice == "R" or choice == "r"):
             result = roll()
             player.roll = result[0]
+
+            # Checks for double, releases player and moves them.
             if (result[1]):
                 player.jail = 0
                 print("Doubles rolled!")
@@ -271,10 +324,13 @@ def jail(player, board):
                 print("%s is now on %s" % (player.name, currSpace))
                 whatDo(player,board)
                 return
+
             else:
                 print("Doubles not rolled.")
                 player.jail = player.jail + 1
                 return
+
+        # Checks if player has a card, uses and releases them if they do.
         elif (choice == "U" or choice == "u"):
             if (player.cards > 0):
                 print("Card used!")
@@ -282,18 +338,29 @@ def jail(player, board):
                 player.jail = 0
                 turn(player,board)
                 return
+
+            # If not, notify them and reset jail func w/o increasing jail count.
             else:
                 print("No cards available.")
                 jail(player,board)
+
+        # Releases the player if they can afford the $50 fee.
         elif (choice == "P" or choice == "p"):
-            print("$50 fine paid!")
-            player.money = player.money - 50
-            player.jail = 0
-            turn(player,board)
-            return
+            if (player.money >= 50):
+                print("$50 fine paid!")
+                player.money = player.money - 50
+                player.jail = 0
+                turn(player,board)
+                return
+            else:
+                print("Not enough money for the fee!")
+                jail(player,board)
 
+        else:
+            print("Please enter an R, U, or P")
 
-
+# Handles the player's turn, where they can view the status, properties, and
+# roll the dice.
 def turn(player, board):
     #print("turn: %s" % (player.name))
     #print(player.position)
@@ -302,25 +369,32 @@ def turn(player, board):
         print("\n%s is in jail." % (player.name))
         jail(player, board)
         return
+
     while True:
         print("\nIt's %s's turn!" % (player.name))
         print("Enter <S> to view status, <P> to view your properties, <A> to view every player's properties, or <R> to roll dice.")
         choice = input()
+
         if choice == "S" or choice == "s":
             for p in board.players:
                 print(p.status())
+
         elif choice == "P" or choice == "p":
             print(player.viewProps())
+
         elif choice == "A" or choice == "a":
             board.viewProps()
+
         elif choice == "R" or choice == "r":
             result = roll()
             player.roll = result[0]
             doub = result[1]
             #print(result)
             pos = detPos(player,result[0],board)
+
             if result == 8 or result == 11:
                 print("%s rolled an %d!" % (player.name, result[0]))
+
             else:
                 print("%s rolled a %d!" % (player.name, result[0]))
             currSpace = pos[1]
@@ -328,10 +402,11 @@ def turn(player, board):
             break
 
         else:
-            print("Please enter an S or an R")
+            print("Please enter an S, P, A, or R")
 
     whatDo(player,board)
     player.prevPos = player.position
+
     if (doub):
         turn(player,board)
     return
@@ -369,6 +444,7 @@ class Player:
         self.jail = 0
         self.name = name
         self.money = int(money)
+
 
     def changeMoney(self, amount):
         self.money = self.money + amount
@@ -452,7 +528,7 @@ class Player:
         if(brnCnt > 0):
             phrase = self.vpassist(brnCnt, "Brown", phrase)
         if(ltbCnt > 0):
-            phrase = self.vpassist(ltbCnt, "LightBlue", phrase)
+            phrase = self.vpassist(ltbCnt, "Light Blue", phrase)
         if(pnkCnt > 0):
             phrase = self.vpassist(pnkCnt, "Pink", phrase)
         if(orgCnt > 0):
