@@ -6,6 +6,8 @@
 ## 1House[12], 2House[13], 3House[14], 4House[15], Hotel[16]]
 
 import random
+import pyttsx3
+
 
 ##---------- FUNCTIONS ----------##
 ## ---> Position Funcs <--- ##
@@ -358,12 +360,18 @@ def jail(player, board):
         else:
             print("Please enter an R, U, or P")
 
+def botTurn(player, board):
+        if (player.jail > 0):
+            print("\n%s is in jail." % (player.name))
+            #botJail(player, board) TODO
+            return
+
 # Handles the player's turn, where they can view the status, properties, and
 # roll the dice.
 def turn(player, board):
     if (player.bot == 1):
         print(player.name, "\ntakes their turn!")
-        # botTurn(player, board) TODO
+        botTurn(player, board)
 
     doub = 0
     if (player.jail > 0):
@@ -605,14 +613,39 @@ for index in pinf:
     counter = counter + 1
 play_inf.close()
 
+# Prepare TTS
+def say(line):
+    if ttsEnabled == 1:
+        engine.say(str(line))
+        engine.runAndWait()
+
+engine = pyttsx3.init()
+ttsEnabled = 1
+while True:
+    say("Would you like Text to Speech?")
+    ttsEnabled = input("\nWould you like Text to Speech? (y/n)")
+    if ttsEnabled == "y" or ttsEnabled == "Y":
+        ttsEnabled = 1
+        break
+
+    elif ttsEnabled == "n" or ttsEnabled == "N":
+        ttsEnabled = 0
+        break
+
+    else:
+        print("Please enter y (yes) or n (no)")
+        say("Please enter y or n")
+
 ## create players
 players = []
 #playerNum = input("How many players?\n")
 while True:
+    say("How many human players?")
     playerNum = input("How many human players?\n")
     try:
         int(playerNum) > 0 and int(playerNum) < 9
     except ValueError:
+        say("Please enter a number between 1 and 8")
         print("Please enter a number between 1 and 8")
         continue
     else:
@@ -624,6 +657,7 @@ while True:
             continue
 
 while True:
+    say("How many bots?\n")
     botNum = input("How many bots?\n")
     try:
         int(botNum) > -1 and int(botNum) < (9 - playerNum)
