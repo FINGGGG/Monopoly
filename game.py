@@ -310,7 +310,6 @@ def jail(player, board):
     # If they haven't, they can choose to roll for doubles, use GooJF Card, or Pay.
     while True:
         choice = input("(R)oll dice, (U)se card, or (P)ay $50 fine.\n")
-
         if (choice == "R" or choice == "r"):
             result = roll()
             player.roll = result[0]
@@ -362,8 +361,10 @@ def jail(player, board):
 # Handles the player's turn, where they can view the status, properties, and
 # roll the dice.
 def turn(player, board):
-    #print("turn: %s" % (player.name))
-    #print(player.position)
+    if (player.bot == 1):
+        print(player.name, "\ntakes their turn!")
+        # botTurn(player, board) TODO
+
     doub = 0
     if (player.jail > 0):
         print("\n%s is in jail." % (player.name))
@@ -431,7 +432,7 @@ class Board:
         #return mainPhrase
 
 class Player:
-    def __init__(self, name, money):
+    def __init__(self, name, money, bot):
         self.properties = []
         self.cards = 0
         self.doubles = 0
@@ -444,6 +445,7 @@ class Player:
         self.jail = 0
         self.name = name
         self.money = int(money)
+        self.bot = bot
 
 
     def changeMoney(self, amount):
@@ -506,7 +508,7 @@ class Player:
         for p in self.properties:
             if (p[2] == "Brown"):
                 brnCnt = brnCnt + 1
-            elif (p[2] == "LightBlue"):
+            elif (p[2] == "Light Blue"):
                 ltbCnt = ltbCnt + 1
             elif (p[2] == "Pink"):
                 pnkCnt = pnkCnt + 1
@@ -607,7 +609,7 @@ play_inf.close()
 players = []
 #playerNum = input("How many players?\n")
 while True:
-    playerNum = input("How many players?\n")
+    playerNum = input("How many human players?\n")
     try:
         int(playerNum) > 0 and int(playerNum) < 9
     except ValueError:
@@ -621,6 +623,20 @@ while True:
             print("Please enter a number between 1 and 8")
             continue
 
+while True:
+    botNum = input("How many bots?\n")
+    try:
+        int(botNum) > -1 and int(botNum) < (9 - playerNum)
+    except ValueError:
+        print("Please enter a number between 0 and ", 9 - playerNum)
+        continue
+    else:
+        if (int(botNum) > -1 and int(botNum) < (9 - playerNum)):
+            botNum = int(botNum)
+            break
+        else:
+            print("Please enter a number between 0 and ", 9 - playerNum)
+            continue
 
 counter = 0
 names = []
@@ -631,13 +647,21 @@ for x in range(playerNum):
         print("Please choose a unique name.")
         print("What is Player %d's name?" % (counter+1))
         name = input()
-    player = Player(name, pinf[0])
+    player = Player(name, pinf[0], 0)
     players.append(player)
     names.append(name)
     counter = counter + 1
+
+for x in range(botNum):
+    nameString = "Bot " + str(x+1)
+    bot = Player(nameString, pinf[0], 1)
+    players.append(bot)
+    names.append(nameString)
+    print("Added bot", nameString, "to the game.")
+
 gameBoard.players = players
 counter = 0
-for x in range(9000):
+for x in range(9999999):
     #print("loop: %d" % (x))
     choice = counter % len(players)
     turn(players[choice], gameBoard)
