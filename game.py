@@ -1,12 +1,9 @@
-## Attempt to make monopoly?
-## Explanation of places.txt:
-## [Type(0),Name(1),Color(2),Cost(3),
-## Rent(4),Position(5),Houses(6),Hotels(7),Owned(8),
-## NumPerColor(9),Mortgaged[10],MortPrice[11],
-## 1House[12], 2House[13], 3House[14], 4House[15], Hotel[16]]
+## Attempt to make monopoly in python with optional text-to-speech, and bots
 
 import random
 import pyttsx3
+import json
+import time
 
 
 ##---------- FUNCTIONS ----------##
@@ -33,7 +30,7 @@ def roll():
 def passGo(player):
     print("%s passed Go!" % (player.name))
     #player.money = player.money + 200
-    changeMoney(player, 200)
+    player.changeMoney(200)
 
 # Allows changing the position of the player.
 def changePos(player, pos, board):
@@ -85,9 +82,11 @@ def whatDo(player, board):
     wholeSpot = board.places[player.position]
     #print("wholeSpot:", wholeSpot[8])
     #if (spot == "Go"):
-
     if (spot == "Prop" or spot == "Util" or spot == "RR"):
-        landOnProp(player, wholeSpot, board)
+        if (int(player.bot) == 0):
+            landOnProp(player, wholeSpot, board)
+        else:
+            botLandOnProp(player, wholeSpot, board)
 
     elif (spot == "Tax"):
         landOnTax(player, wholeSpot)
@@ -179,28 +178,30 @@ def landOnProp(player, position, board):
             print("Could not afford this %s." % (typ))
             return
 
-        print("(Color: %s, Owned of this color: %s out of %s available and %s total)" % (position[2], colOwned(player, position), totColOwned(position, board), position[9]))
-        choice = input("This %s is not owned and costs $%s (you have $%s), to purchase, press y. To decline, press any other key.\n" % (typ, int(position[3]), player.money))
-
-        if (choice == "y" or choice == "Y"):
-            board.places[player.position][8] = 1
-            player.properties.append(position)
-            player.money = player.money - int(position[3])
-            print("%s purchased %s" % (player.name, position[1]))
-
-            if (board.places[player.position][0] == "RR"):
-                player.rrs = player.rrs + 1
-
-            if (board.places[player.position][0] == "Util"):
-                player.utils = player.utils + 1
-            return
-
     if (int(position[8]) == 1):
         if position in player.properties:
             print("%s owns this %s." % (player.name, typ))
-
+            return
         else:
             payRentProp(player, position, board)
+            return
+
+    print("(Color: %s, Owned of this color: %s out of %s available and %s total)" % (position[2], colOwned(player, position), totColOwned(position, board), position[9]))
+    choice = input("This %s is not owned and costs $%s (you have $%s), to purchase, press y. To decline, press any other key.\n" % (typ, int(position[3]), player.money))
+
+    if (choice == "y" or choice == "Y"):
+        board.places[player.position][8] = 1
+        player.properties.append(position)
+        player.money = player.money - int(position[3])
+        print("%s purchased %s" % (player.name, position[1]))
+
+        if (board.places[player.position][0] == "RR"):
+            player.rrs = player.rrs + 1
+
+        if (board.places[player.position][0] == "Util"):
+            player.utils = player.utils + 1
+        return
+
     return
 
 ## ---> Other Funcs <--- ##
@@ -251,7 +252,7 @@ def useCard(given, player, board):
                 given[1] = 35
 
         changePos(player, given[1], board)
-        whatDo(player, board)
+        #whatDo(player, board)
     elif (typ == "Get"):
         player.money = player.money + int(given[1])
     elif (typ == "Back"):
@@ -360,18 +361,14 @@ def jail(player, board):
         else:
             print("Please enter an R, U, or P")
 
-def botTurn(player, board):
-        if (player.jail > 0):
-            print("\n%s is in jail." % (player.name))
-            #botJail(player, board) TODO
-            return
-
 # Handles the player's turn, where they can view the status, properties, and
 # roll the dice.
 def turn(player, board):
     if (player.bot == 1):
-        print(player.name, "\ntakes their turn!")
+        time.sleep(1)
+        print("\n%s takes their turn!" % player.name)
         botTurn(player, board)
+        return
 
     doub = 0
     if (player.jail > 0):
@@ -407,7 +404,11 @@ def turn(player, board):
             else:
                 print("%s rolled a %d!" % (player.name, result[0]))
             currSpace = pos[1]
-            print("%s is now on %s" % (player.name, currSpace))
+            if currSpace != "Jail":
+                print("%s is now on %s" % (player.name, currSpace))
+            else:
+                if player.jail == 0:
+                    print("%s is now on Just Visiting %s" % (player.name, currSpace))
             break
 
         else:
@@ -419,6 +420,116 @@ def turn(player, board):
     if (doub):
         turn(player,board)
     return
+
+## ---> Bot Funcs <--- ##
+def botTurn(player, board):
+        if (player.jail > 0):
+            print("\n%s is in jail." % (player.name))
+            #botJail(player, board) TODO
+            return
+
+        result = roll()
+        player.roll = result[0]
+        doub = result[1]
+        #print(result)
+        pos = detPos(player,result[0],board)
+
+        if result == 8 or result == 11:
+            print("%s rolled an %d!" % (player.name, result[0]))
+
+        else:
+            print("%s rolled a %d!" % (player.name, result[0]))
+        currSpace = pos[1]
+        print("%s is now on %s" % (player.name, currSpace))
+
+        whatDo(player,board)
+        player.prevPos = player.position
+
+        if (doub):
+            turn(player,board)
+        return
+
+def botLandOnProp(player, position, board):
+    typ = position[0]
+    if (typ == "Prop"):
+        typ = "property"
+    elif (typ == "Util"):
+        typ = "utility"
+    elif (typ == "RR"):
+        typ = "railroad"
+    print("(Color: %s, Owned of this color: %s out of %s available and %s total)" % (position[2], colOwned(player, position), totColOwned(position, board), position[9]))
+
+    if (int(position[8]) == 0):
+        if (player.money < int(position[3])):
+            print("Could not afford this %s." % (typ))
+            return
+
+    if (int(position[8]) == 1):
+        if position in player.properties:
+            print("%s owns this %s." % (player.name, typ))
+            return
+        else:
+            payRentProp(player, position, board)
+            return
+
+    choice = botPropertyChoice(player, position, board)
+    if (choice == 1):
+        board.places[player.position][8] = 1
+        player.properties.append(position)
+        player.money = player.money - int(position[3])
+        print("%s purchased %s" % (player.name, position[1]))
+
+        if (board.places[player.position][0] == "RR"):
+            player.rrs = player.rrs + 1
+
+        if (board.places[player.position][0] == "Util"):
+            player.utils = player.utils + 1
+        return
+    else:
+        print("%s chose not to purchase %s" % (player.name, position[1]))
+
+    return
+
+def botPropertyChoice(player, position, board):
+    ownSituation = {player.name:player.getProps()}
+    otherSituation = {}
+    for other in players:
+        if other.name != player.name:
+            otherSituation[other.name] = other.getProps()
+
+    # Chance that the bot will buy a property will be decided by choosing a random
+    # number between 1 and totalChance, if the number is less than chance, the
+    # bot will buy the property.
+
+    chance = 80
+    totalChance = 100
+
+    # The number of currently owned properties of the color will greatly increase
+    # the bots chance to buy the property
+    color = position[2]
+    ownedOfColor = ownSituation[player.name][str(color)]
+    if ownedOfColor > 0:
+        chance + 40
+
+    # Additionally, other players/bots owning properties of the color will increase
+    # the bots chance to buy the property.
+    otherOwnedOfColor = 0
+    for x in otherSituation:
+        otherOwnedOfColor += int(otherSituation[x][str(color)])
+
+    chance += 20 * otherOwnedOfColor
+
+    # If the cost of the property would leave the bot with less than half of
+    # their money, it greatly reduces the chance to buy the property
+    price = position[3]
+    if int(price) >= (int(player.money) * 2):
+        chance - 40
+
+    decision = random.randint(1, totalChance)
+    if decision <= chance:
+        return 1
+    else:
+        return 0
 
 ## ---------- CLASSES ---------- ##
 
@@ -557,6 +668,43 @@ class Player:
             phrase = self.vpassist(rrdCnt, "RR", phrase)
         return phrase
 
+    def getProps(self):
+        brnCnt = 0
+        ltbCnt = 0
+        pnkCnt = 0
+        orgCnt = 0
+        redCnt = 0
+        ylwCnt = 0
+        grnCnt = 0
+        bluCnt = 0
+        utlCnt = 0
+        rrdCnt = 0
+        for p in self.properties:
+            if (p[2] == "Brown"):
+                brnCnt = brnCnt + 1
+            elif (p[2] == "Light Blue"):
+                ltbCnt = ltbCnt + 1
+            elif (p[2] == "Pink"):
+                pnkCnt = pnkCnt + 1
+            elif (p[2] == "Orange"):
+                orgCnt = orgCnt + 1
+            elif (p[2] == "Red"):
+                redCnt = redCnt + 1
+            elif (p[2] == "Yellow"):
+                ylwCnt = ylwCnt + 1
+            elif (p[2] == "Green"):
+                grnCnt = grnCnt + 1
+            elif (p[2] == "Blue"):
+                bluCnt = bluCnt + 1
+            elif (p[0] == "Util"):
+                utlCnt = utlCnt + 1
+            elif (p[0] == "RR"):
+                rrdCnt = rrdCnt + 1
+        result = {'Brown':brnCnt, 'Light Blue':ltbCnt, 'Pink':pnkCnt, 'Orange':orgCnt,
+        'Red':redCnt, 'Yellow':ylwCnt, 'Green':grnCnt, 'Blue':bluCnt, 'Utility':utlCnt,
+        'Railroad':rrdCnt}
+
+        return result
 
 
 
@@ -619,22 +767,26 @@ def say(line):
         engine.say(str(line))
         engine.runAndWait()
 
-engine = pyttsx3.init()
-ttsEnabled = 1
-while True:
-    say("Would you like Text to Speech?")
-    ttsEnabled = input("\nWould you like Text to Speech? (y/n)")
-    if ttsEnabled == "y" or ttsEnabled == "Y":
-        ttsEnabled = 1
-        break
-
-    elif ttsEnabled == "n" or ttsEnabled == "N":
-        ttsEnabled = 0
-        break
-
-    else:
-        print("Please enter y (yes) or n (no)")
-        say("Please enter y or n")
+tts_inf = open("tts.txt", "r")
+tinf = tts_inf.readlines()
+for index in tinf:
+    ttsEnabled = int(index.strip())
+if ttsEnabled == 1:
+    engine = pyttsx3.init()
+#while True:
+#    say("Would you like Text to Speech?")
+#    ttsEnabled = input("\nWould you like Text to Speech? (y/n)")
+#    if ttsEnabled == "y" or ttsEnabled == "Y":
+#        ttsEnabled = 1
+#        break
+#
+#    elif ttsEnabled == "n" or ttsEnabled == "N":
+#        ttsEnabled = 0
+#        break
+#
+#    else:
+#        print("Please enter y (yes) or n (no)")
+#        say("Please enter y or n")
 
 ## create players
 players = []
