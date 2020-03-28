@@ -842,6 +842,9 @@ if (startChoice.lower() == "t"):
     instructions = input()
     if (instructions.lower() == "y"):
         instructions = 1
+else:
+    ttsEnabled = 0
+    instructions = 0
 
 ## create players
 players = []
