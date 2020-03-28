@@ -35,6 +35,8 @@ on an open property that would cost almost all their money, there is a high prob
 order to save money.
 
 ## To Do List
+- Houses and Hotels
+
 - Negotiations
   - Allow players to make offers to others during their turn.
   - Player that recieves the offer can accept or deny it, possbily make counter offer
