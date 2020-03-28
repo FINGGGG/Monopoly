@@ -4,7 +4,9 @@ import random
 import pyttsx3
 import json
 import time
-
+import os
+import subprocess
+import platform
 
 ##---------- FUNCTIONS ----------##
 ## ---> Position Funcs <--- ##
@@ -764,8 +766,11 @@ play_inf.close()
 # Prepare TTS
 def say(line):
     if ttsEnabled == 1:
-        engine.say(str(line))
-        engine.runAndWait()
+        if engine != "Mac":
+            engine.say(str(line))
+            engine.runAndWait()
+            return
+        subprocess.Popen(["say", line])
 
 tts_inf = open("tts.txt", "r")
 tinf = tts_inf.readlines()
@@ -773,6 +778,9 @@ for index in tinf:
     ttsEnabled = int(index.strip())
 if ttsEnabled == 1:
     engine = pyttsx3.init()
+    if platform.system() == "Darwin":
+        engine = "Mac"
+
 #while True:
 #    say("Would you like Text to Speech?")
 #    ttsEnabled = input("\nWould you like Text to Speech? (y/n)")
