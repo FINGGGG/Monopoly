@@ -50,6 +50,8 @@ order to save money.
 
 - Streamline text-to-speech code to make game flow better and faster
 
+- Sound effects! Dice rolling, money sounds, etc
+
 - Once game is finished, put it somewhere people can play! Maybe [audiogames.net](https://www.audiogames.net/)
 
 places.txt legend:
