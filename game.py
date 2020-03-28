@@ -9,8 +9,6 @@ import os
 import subprocess
 import platform
 
-
-
 ##---------- FUNCTIONS ----------##
 ## ---> Position Funcs <--- ##
 
@@ -22,7 +20,7 @@ def roll():
     d2 = random.randint(1,6)
     #d1 = d2 = 3
     if (d1 == d2 and player.doubles < 2):
-        print("Doubles!")
+        speak("Doubles!")
         #print(player.doubles)
         player.doubles = player.doubles + 1
         res = [d1 + d2, 1]
@@ -33,7 +31,7 @@ def roll():
 
 # Called when the player passes Go, it gives them $200.
 def passGo(player):
-    print("%s passed Go!" % (player.name))
+    speak("%s passed Go!" % (player.name))
     #player.money = player.money + 200
     player.changeMoney(200)
 
@@ -109,7 +107,7 @@ def whatDo(player, board):
 
 # Handles when the player lands on the Go To Jail space.
 def landOnJail(player, board):
-    print("%s went to jail!" % (player.name))
+    speak("%s went to jail!" % (player.name))
     player.jail = 1
     return
 
@@ -165,7 +163,7 @@ def landOnFate(player, board):
 def landOnTax(player, position):
     amt = position[3]
     player.money = int(player.money) - int(amt)
-    print("%s has paid $%s in tax." % (player.name, amt))
+    speak("%s has paid $%s in tax." % (player.name, amt))
     return
 
 # Handles when the player lands on a Property space.
@@ -180,12 +178,12 @@ def landOnProp(player, position, board):
 
     if (int(position[8]) == 0):
         if (player.money < int(position[3])):
-            print("Could not afford this %s." % (typ))
+            speak("Could not afford this %s." % (typ))
             return
 
     if (int(position[8]) == 1):
         if position in player.properties:
-            print("%s owns this %s." % (player.name, typ))
+            speak("%s owns this %s." % (player.name, typ))
             return
         else:
             payRentProp(player, position, board)
@@ -198,7 +196,7 @@ def landOnProp(player, position, board):
         board.places[player.position][8] = 1
         player.properties.append(position)
         player.money = player.money - int(position[3])
-        print("%s purchased %s" % (player.name, position[1]))
+        speak("%s purchased %s" % (player.name, position[1]))
 
         if (board.places[player.position][0] == "RR"):
             player.rrs = player.rrs + 1
@@ -239,7 +237,7 @@ def useCard(given, player, board):
     #print(given, player.status())
     typ = str(given[0])
     #print(typ)
-    print("%s" % (given[2]))
+    speak("%s" % (given[2]))
     if (typ == "GoTo"):
         if (given[1] == "U"):
             if (player.position > 28 or player.position <= 12):
@@ -283,25 +281,25 @@ def payRentProp(player, position, board):
             if (position[0] == "Prop"):
                 player.money = int(player.money) - int(amt)
                 p.money = int(p.money) + int(amt)
-                print("%s has paid %s $%s in rent." % (player.name, p.name, amt))
+                speak("%s has paid %s $%s in rent." % (player.name, p.name, amt))
                 return
                 ## TODO: add house/hotel rent
             elif (position[0] == "Util"):
                 if (p.utils == 1):
                     player.money = int(player.money) - int(player.roll * 4)
                     p.money = int(p.money) + int(player.roll * 4)
-                    print("%s has paid %s $%s in rent." % (player.name, p.name, player.roll * 4))
+                    speak("%s has paid %s $%s in rent." % (player.name, p.name, player.roll * 4))
                     return
                 if (p.utils == 2):
                     player.money = int(player.money) - int(player.roll * 10)
                     p.money = int(p.money) + int(player.roll * 10)
-                    print("%s has paid %s $%s in rent." % (player.name, p.name, player.roll * 10))
+                    speak("%s has paid %s $%s in rent." % (player.name, p.name, player.roll * 10))
                     return
             elif (position[0] == "RR"):
                 amt = int(amt) * int(p.rrs)
                 player.money = int(player.money) - int(amt)
                 p.money = int(p.money) + int(amt)
-                print("%s has paid %s $%s in rent." % (player.name, p.name, amt))
+                speak("%s has paid %s $%s in rent." % (player.name, p.name, amt))
                 return
 
 #  handles a player's turn while they are in jail.
@@ -310,7 +308,7 @@ def jail(player, board):
 
     # If player has been in jail for 3 or more turns, release them.
     if (player.jail >= 3):
-        print("Jail time served.")
+        speak("Jail time served.")
         player.jail = 0
         turn(player, board)
         return
@@ -325,22 +323,22 @@ def jail(player, board):
             # Checks for double, releases player and moves them.
             if (result[1]):
                 player.jail = 0
-                print("Doubles rolled!")
+                speak("Doubles rolled! Jail escaped!")
                 pos = detPos(player,result[0],board)
                 currSpace = pos[1]
-                print("%s is now on %s" % (player.name, currSpace))
+                speak("%s is now on %s" % (player.name, currSpace))
                 whatDo(player,board)
                 return
 
             else:
-                print("Doubles not rolled.")
+                speak("Doubles not rolled. Jail time continues.")
                 player.jail = player.jail + 1
                 return
 
         # Checks if player has a card, uses and releases them if they do.
         elif (choice == "U" or choice == "u"):
             if (player.cards > 0):
-                print("Card used!")
+                speak("Get out of jail free card used!")
                 player.cards = player.cards - 1
                 player.jail = 0
                 turn(player,board)
@@ -348,50 +346,50 @@ def jail(player, board):
 
             # If not, notify them and reset jail func w/o increasing jail count.
             else:
-                print("No cards available.")
+                speak("No get out of jail free cards available.")
                 jail(player,board)
 
         # Releases the player if they can afford the $50 fee.
         elif (choice == "P" or choice == "p"):
             if (player.money >= 50):
-                print("$50 fine paid!")
+                speak("$50 fine paid!")
                 player.money = player.money - 50
                 player.jail = 0
                 turn(player,board)
                 return
             else:
-                print("Not enough money for the fee!")
+                speak("Not enough money for the fee!")
                 jail(player,board)
 
         else:
-            print("Please enter an R, U, or P")
+            speak("Please enter an R, U, or P")
 
 # Handles the player's turn, where they can view the status, properties, and
 # roll the dice.
 def turn(player, board):
     if (player.bot == 1):
         time.sleep(1)
-        print("\n%s takes their turn!" % player.name)
+        speak("\n%s takes their turn!" % player.name)
         botTurn(player, board)
         return
 
     doub = 0
     if (player.jail > 0):
-        print("\n%s is in jail." % (player.name))
+        speak("\n%s is in jail." % (player.name))
         jail(player, board)
         return
 
     while True:
-        print("\nIt's %s's turn!" % (player.name))
+        speak("\nIt's %s's turn!" % (player.name))
         print("Enter <S> to view status, <P> to view your properties, <A> to view every player's properties, or <R> to roll dice.")
         choice = input()
 
         if choice == "S" or choice == "s":
             for p in board.players:
-                print(p.status())
+                speak(p.status())
 
         elif choice == "P" or choice == "p":
-            print(player.viewProps())
+            speak(player.viewProps())
 
         elif choice == "A" or choice == "a":
             board.viewProps()
@@ -404,20 +402,20 @@ def turn(player, board):
             pos = detPos(player,result[0],board)
 
             if result == 8 or result == 11:
-                print("%s rolled an %d!" % (player.name, result[0]))
+                speak("%s rolled an %d!" % (player.name, result[0]))
 
             else:
-                print("%s rolled a %d!" % (player.name, result[0]))
+                speak("%s rolled a %d!" % (player.name, result[0]))
             currSpace = pos[1]
             if currSpace != "Jail":
-                print("%s is now on %s" % (player.name, currSpace))
+                speak("%s is now on %s" % (player.name, currSpace))
             else:
                 if player.jail == 0:
-                    print("%s is now on Just Visiting %s" % (player.name, currSpace))
+                    speak("%s is now on Just Visiting %s" % (player.name, currSpace))
             break
 
         else:
-            print("Please enter an S, P, A, or R")
+            speak("Please enter an S, P, A, or R")
 
     whatDo(player,board)
     player.prevPos = player.position
@@ -429,23 +427,23 @@ def turn(player, board):
 ## ---> Bot Funcs <--- ##
 def botTurn(player, board):
         if (player.jail > 0):
-            print("\n%s is in jail." % (player.name))
+            speak("\n%s is in jail." % (player.name))
             #botJail(player, board) TODO
             return
 
         result = roll()
         player.roll = result[0]
         doub = result[1]
-        #print(result)
+        #speak(result)
         pos = detPos(player,result[0],board)
 
         if result == 8 or result == 11:
-            print("%s rolled an %d!" % (player.name, result[0]))
+            speak("%s rolled an %d!" % (player.name, result[0]))
 
         else:
-            print("%s rolled a %d!" % (player.name, result[0]))
+            speak("%s rolled a %d!" % (player.name, result[0]))
         currSpace = pos[1]
-        print("%s is now on %s" % (player.name, currSpace))
+        speak("%s is now on %s" % (player.name, currSpace))
 
         whatDo(player,board)
         player.prevPos = player.position
@@ -466,12 +464,12 @@ def botLandOnProp(player, position, board):
 
     if (int(position[8]) == 0):
         if (player.money < int(position[3])):
-            print("Could not afford this %s." % (typ))
+            speak("Could not afford this %s." % (typ))
             return
 
     if (int(position[8]) == 1):
         if position in player.properties:
-            print("%s owns this %s." % (player.name, typ))
+            speak("%s owns this %s." % (player.name, typ))
             return
         else:
             payRentProp(player, position, board)
@@ -482,7 +480,7 @@ def botLandOnProp(player, position, board):
         board.places[player.position][8] = 1
         player.properties.append(position)
         player.money = player.money - int(position[3])
-        print("%s purchased %s" % (player.name, position[1]))
+        speak("%s purchased %s" % (player.name, position[1]))
 
         if (board.places[player.position][0] == "RR"):
             player.rrs = player.rrs + 1
@@ -491,7 +489,7 @@ def botLandOnProp(player, position, board):
             player.utils = player.utils + 1
         return
     else:
-        print("%s chose not to purchase %s" % (player.name, position[1]))
+        speak("%s chose not to purchase %s" % (player.name, position[1]))
 
     return
 
@@ -552,7 +550,7 @@ class Board:
     def viewProps(self):
         #mainPhrase = ""
         for pla in self.players:
-            print(pla.viewProps())
+            speak(pla.viewProps())
         #return mainPhrase
 
 class Player:
@@ -772,6 +770,7 @@ secondEngine = ""
 if platform.system() == "Darwin":
     engine = "Mac"
     secondEngine = pyttsx3.init()
+
 #TTS and print the given line while waiting for it to finish
 def speak(line):
     print(line)
@@ -843,11 +842,6 @@ if (startChoice.lower() == "t"):
     instructions = input()
     if (instructions.lower() == "y"):
         instructions = 1
-# Prepare TTS
-#tts_inf = open("tts.txt", "r")
-#tinf = tts_inf.readlines()
-#for index in tinf:
-#    ttsEnabled = int(index.strip())
 
 ## create players
 players = []
