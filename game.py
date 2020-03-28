@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 ## Attempt to make monopoly in python with optional text-to-speech, and bots
 
 import random
