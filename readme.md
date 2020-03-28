@@ -38,7 +38,7 @@ order to save money.
 - Negotiations
   - Allow players to make offers to others during their turn.
   - Player that recieves the offer can accept or deny it, possbily make counter offer
-  - Bots accept, deny, possibly counter offer based on probabiliy calculations using their current stats
+  - Bots accept, deny, possibly counter offer based on probability calculations using their current stats
 
 - Text Summaries
 
