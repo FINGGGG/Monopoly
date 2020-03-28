@@ -35,6 +35,8 @@ on an open property that would cost almost all their money, there is a high prob
 order to save money.
 
 ## To Do List
+- Mortgages
+
 - Houses and Hotels
 
 - Negotiations
