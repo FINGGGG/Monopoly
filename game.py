@@ -8,6 +8,8 @@ import os
 import subprocess
 import platform
 
+
+
 ##---------- FUNCTIONS ----------##
 ## ---> Position Funcs <--- ##
 
@@ -763,7 +765,30 @@ for index in pinf:
     counter = counter + 1
 play_inf.close()
 
-# Prepare TTS
+ttsEnabled = 1
+engine = pyttsx3.init()
+secondEngine = ""
+if platform.system() == "Darwin":
+    engine = "Mac"
+    secondEngine = pyttsx3.init()
+#TTS and print the given line while waiting for it to finish
+def speak(line):
+    print(line)
+    if ttsEnabled == 1:
+        if secondEngine == "":
+            engine.say(str(line))
+            engine.runAndWait()
+            return
+        secondEngine.say(str(line))
+        secondEngine.runAndWait()
+        return
+
+#TTS and print the given line without waiting
+def speakFast(line):
+    print(line)
+    say(line)
+
+#TTS the given line
 def say(line):
     if ttsEnabled == 1:
         if engine != "Mac":
@@ -772,75 +797,70 @@ def say(line):
             return
         subprocess.Popen(["say", line])
 
-tts_inf = open("tts.txt", "r")
-tinf = tts_inf.readlines()
-for index in tinf:
-    ttsEnabled = int(index.strip())
-if ttsEnabled == 1:
-    engine = pyttsx3.init()
-    if platform.system() == "Darwin":
-        engine = "Mac"
+#TTS the given line and take input, and loop until input is correct
+# include is True of False if allowedInputs should be checked for inclusion (True)
+# or not (False)
+# inst is True or False if the ask is an instruction or not.
+def ask(line, errorLine, allowedInputs, include, inst):
+    asked = 0
+    result = ""
+    if not(line.endswith("\n")):
+        line = line + "\n"
+    if not(errorLine.endswith("\n")):
+        errorLine = errorLine + "\n"
 
-#while True:
-#    say("Would you like Text to Speech?")
-#    ttsEnabled = input("\nWould you like Text to Speech? (y/n)")
-#    if ttsEnabled == "y" or ttsEnabled == "Y":
-#        ttsEnabled = 1
-#        break
-#
-#    elif ttsEnabled == "n" or ttsEnabled == "N":
-#        ttsEnabled = 0
-#        break
-#
-#    else:
-#        print("Please enter y (yes) or n (no)")
-#        say("Please enter y or n")
+    while True:
+        if asked == 0:
+            if not inst:
+                say(line)
+            result = input(line)
+            asked = 1
+        else:
+            result = input("")
+        if (include):
+            if result in allowedInputs:
+                break
+            else:
+                speakFast(errorLine)
+                continue
+        else:
+            if result not in allowedInputs:
+                break
+            else:
+                speakFast(errorLine)
+                continue
+
+    return result
+
+## Introduce Game
+speakFast("Welcome to Text-to-Monopoly, hit T to enable narration, or enter to play.")
+startChoice = input()
+instructions = 0
+if (startChoice.lower() == "t"):
+    ttsEnabled = 1
+    speakFast("Would you like instructions narrated too? Press y to accept, or any other key to decline.")
+    instructions = input()
+    if (instructions.lower() == "y"):
+        instructions = 1
+# Prepare TTS
+#tts_inf = open("tts.txt", "r")
+#tinf = tts_inf.readlines()
+#for index in tinf:
+#    ttsEnabled = int(index.strip())
 
 ## create players
 players = []
-#playerNum = input("How many players?\n")
-while True:
-    say("How many human players?")
-    playerNum = input("How many human players?\n")
-    try:
-        int(playerNum) > 0 and int(playerNum) < 9
-    except ValueError:
-        say("Please enter a number between 1 and 8")
-        print("Please enter a number between 1 and 8")
-        continue
-    else:
-        if (int(playerNum) > 0 and int(playerNum) < 9):
-            playerNum = int(playerNum)
-            break
-        else:
-            print("Please enter a number between 1 and 8")
-            continue
+asked = 0
+playerNum = int(ask("How many human players?", "Please enter a number between 1 and 8", ["1","2","3","4","5","6","7","8"], include=True, inst=False))
+botNumList = list(map(str, range(1, 9 - int(playerNum) + 1)))
+botError = "Please enter a number between 0 and %d" % (9 - int(playerNum))
+botNum = int(ask("How many bots?", botError, botNumList, include=True, inst=False))
 
-while True:
-    say("How many bots?\n")
-    botNum = input("How many bots?\n")
-    try:
-        int(botNum) > -1 and int(botNum) < (9 - playerNum)
-    except ValueError:
-        print("Please enter a number between 0 and ", 9 - playerNum)
-        continue
-    else:
-        if (int(botNum) > -1 and int(botNum) < (9 - playerNum)):
-            botNum = int(botNum)
-            break
-        else:
-            print("Please enter a number between 0 and ", 9 - playerNum)
-            continue
 
 counter = 0
 names = []
 for x in range(playerNum):
-    print("What is Player %d's name?" % (counter+1))
-    name = input()
-    while name in names:
-        print("Please choose a unique name.")
-        print("What is Player %d's name?" % (counter+1))
-        name = input()
+    name = ask("What is Player %d's name?" % (counter+1), "Please choose a unique name.", names, include=False, inst=False)
     player = Player(name, pinf[0], 0)
     players.append(player)
     names.append(name)
@@ -851,12 +871,12 @@ for x in range(botNum):
     bot = Player(nameString, pinf[0], 1)
     players.append(bot)
     names.append(nameString)
-    print("Added bot", nameString, "to the game.")
+
+speak("Added %d bots to the game" % botNum)
 
 gameBoard.players = players
 counter = 0
-for x in range(9999999):
-    #print("loop: %d" % (x))
+while True:
     choice = counter % len(players)
     turn(players[choice], gameBoard)
     counter = counter + 1
