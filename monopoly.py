@@ -164,6 +164,7 @@ def landOnTax(player, position):
     amt = position[3]
     player.money = int(player.money) - int(amt)
     speak("%s has paid $%s in tax." % (player.name, amt))
+    player.taxPaid = int(amt)
     return
 
 # Handles when the player lands on a Property space.
@@ -251,6 +252,7 @@ def useCard(given, player, board):
     #print(given, player.status())
     typ = str(given[0])
     #print(typ)
+    player.cardUsed = given
     speak("%s" % (given[2]))
     if (typ == "GoTo"):
         if (given[1] == "U"):
@@ -278,7 +280,9 @@ def useCard(given, player, board):
     elif (typ == "Pay"):
         player.money = player.money - int(int(given[1]) * len(board.players))
         for p in board.players:
-            p.money = player.money + int(given[1])
+            if not (p.name == player.name):
+                p.money = p.money + int(given[1])
+
     elif (typ == "Card"):
         player.cards = player.cards + 1
     elif (typ == "Jail"):
@@ -296,6 +300,13 @@ def payRentProp(player, position, board):
                 player.money = int(player.money) - int(amt)
                 p.money = int(p.money) + int(amt)
                 speak("%s has paid %s $%s in rent." % (player.name, p.name, amt))
+
+                # Add summaries
+                player.rentPaid = int(amt)
+                player.rentPaidTo = p.name
+                p.rentGot = int(amt)
+                p.rentGotFrom = player.name
+
                 return
                 ## TODO: add house/hotel rent
             elif (position[0] == "Util"):
@@ -303,17 +314,38 @@ def payRentProp(player, position, board):
                     player.money = int(player.money) - int(player.roll * 4)
                     p.money = int(p.money) + int(player.roll * 4)
                     speak("%s has paid %s $%s in rent." % (player.name, p.name, player.roll * 4))
+
+                    # Add summaries
+                    player.rentPaid = int(player.roll * 4)
+                    player.rentPaidTo = p.name
+                    p.rentGot = int(player.roll * 4)
+                    p.rentGotFrom = player.name
+
                     return
                 if (p.utils == 2):
                     player.money = int(player.money) - int(player.roll * 10)
                     p.money = int(p.money) + int(player.roll * 10)
                     speak("%s has paid %s $%s in rent." % (player.name, p.name, player.roll * 10))
+
+                    # Add summaries
+                    player.rentPaid = int(player.roll * 10)
+                    player.rentPaidTo = p.name
+                    p.rentGot = int(player.roll * 10)
+                    p.rentGotFrom = player.name
+
                     return
             elif (position[0] == "RR"):
                 amt = int(amt) * int(p.rrs)
                 player.money = int(player.money) - int(amt)
                 p.money = int(p.money) + int(amt)
                 speak("%s has paid %s $%s in rent." % (player.name, p.name, amt))
+
+                # Add summaries
+                player.rentPaid = int(amt)
+                player.rentPaidTo = p.name
+                p.rentGot = int(amt)
+                p.rentGotFrom = player.name
+
                 return
 
 #  handles a player's turn while they are in jail.
@@ -444,6 +476,10 @@ def turn(player, board):
     if (doub):
         turn(player,board)
     return
+
+def generateSummary(before, after, player):
+    #TODO
+    x = 1
 
 ## ---> Bot Funcs <--- ##
 def botTurn(player, board):
@@ -598,16 +634,32 @@ class Player:
         self.money = int(money)
         self.bot = bot
 
+        self.cardUsed = ""
+        self.taxPaid = 0
+        self.rentPaid = 0
+        self.rentPaidTo = ""
+        self.rentGot = 0
+        self.rentGotFrom = ""
+
 
     def changeMoney(self, amount):
         self.money = self.money + amount
 
     def changeProperty(self, prop, add):
         if add == 1:
-            properties.append(prop)
+            self.properties.append(prop)
         if add == 0:
-            if prop in properties:
-                properties.remove(prop)
+            if prop in self.properties:
+                self.properties.remove(prop)
+
+    def resetSummary(self):
+        self.cardUsed = ""
+        self.taxPaid = 0
+        self.rentPaid = 0
+        self.rentPaidTo = ""
+        self.rentGot = 0
+        self.rentGotFrom = ""
+
     def status(self): ## 40 represents # of spaces, change if modded
         phrase = ("%s: Money: $%s, Position: %s (%d of 40)" %
                 (self.name, self.money, self.posName, self.position + 1))
@@ -743,7 +795,7 @@ class Player:
 
 
 ## ---------- SET UP ---------- ##
-##(program begins here)##
+##(program execution begins here)##
 
 ## read places.txt
 spaces_inf = open("places.txt", "r")
@@ -919,5 +971,14 @@ while True:
         speak("%s is the only remaining player! Game over." % (players[0].name))
         break
     choice = gameBoard.counter % len(players)
+
+    # Store players as "before" to generate a summary
+    before = players
     turn(players[choice], gameBoard)
+
+    # generate and speak the summaries, then reset the summary class variables
+    generateSummary(before, players, players[choice])
+    for p in players:
+        p.resetSummary()
+
     gameBoard.counter += 1
