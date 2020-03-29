@@ -192,10 +192,10 @@ def landOnProp(player, position, board):
     print("(Color: %s, Owned of this color: %s out of %s available and %s total)" % (position[2], colOwned(player, position), totColOwned(position, board), position[9]))
     say("Color is %s, %s owns %s out of %s available and %s total." % (position[2], player.name, colOwned(player, position), totColOwned(position, board), position[9]))
     if (instructions == 1):
-        say("This %s is not owned and costs $%s (you have $%s), to purchase, press y. To decline, press any other key.\n" % (typ, int(position[3]), player.money))
+        say("This %s is not owned and costs $%s (you have $%s), to purchase, press 'Y'. To decline, press any other key.\n" % (typ, int(position[3]), player.money))
     else:
         say("It costs $%s, and you have %s." % (int(position[3]), player.money))
-    choice = input("This %s is not owned and costs $%s (you have $%s), to purchase, press y. To decline, press any other key.\n" % (typ, int(position[3]), player.money))
+    choice = input("This %s is not owned and costs $%s (you have $%s), to purchase, press 'Y'. To decline, press any other key.\n" % (typ, int(position[3]), player.money))
 
     if (choice == "y" or choice == "Y"):
         board.places[player.position][8] = 1
@@ -218,7 +218,10 @@ def landOnProp(player, position, board):
 # the Color from the current position.
 def bankrupt(player, board):
     speak("%s has gone bankrupt!" % player.name)
-    players.remove(player)
+    for x in players:
+        if x.name == player.name:
+            players.remove(x)
+
     board.counter += 1
 
 
@@ -628,8 +631,8 @@ class Player:
         elif (color == "RR"):
             totCnt = 4
         if(count > 0):
-            phrase = phrase + (" %ss(%d of %s): " % (color, count, totCnt))
-            counter = 0
+            phrase = phrase + ("\n%ss(%d of %s): " % (color, count, totCnt))
+            counter = 1
             for p in self.properties:
                 if color in p:
                     phrase = phrase + ("%s" % (p[1]))
@@ -643,7 +646,7 @@ class Player:
         return phrase
 
     def viewProps(self):
-        phrase = ("%s's properties: " % (self.name))
+        phrase = ("\n%s's properties: " % (self.name))
         brnCnt = 0
         ltbCnt = 0
         pnkCnt = 0
