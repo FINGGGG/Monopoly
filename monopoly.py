@@ -395,7 +395,7 @@ def jail(player, board):
                 pos = detPos(player,result[0],board)
                 currSpace = pos[1]
                 speak("%s is now on %s (%d of %d)" % (player.name, currSpace,
-                player.postion+1, board.spaces))
+                player.postion, board.spaces))
                 whatDo(player,board)
                 return
 
@@ -553,6 +553,51 @@ def botTurn(player, board):
             turn(player,board)
         return
 
+def botJail(player, board):
+    changePos(player, 10, board)
+
+    # If bot has been in jail for 3 or more turns, release them.
+    if (player.jail >= 3):
+        speak("Jail time served.")
+        player.jail = 0
+        turn(player, board)
+        return
+
+    if (player.cards > 0):
+        speak("Get out of jail free card used!")
+        player.cards = player.cards - 1
+        player.jail = 0
+        turn(player,board)
+        return
+
+    if (player.money > 200):
+        speak("$50 fine paid!")
+        player.money = player.money - 50
+        player.jail = 0
+        turn(player,board)
+        return
+
+    result = roll()
+    player.roll = result[0]
+
+    # Checks for double, releases bot and moves them.
+    if (result[1]):
+        player.jail = 0
+        speak("Doubles rolled! Jail escaped!")
+        pos = detPos(player,result[0],board)
+        currSpace = pos[1]
+        speak("%s is now on %s (%d of %d)" % (player.name, currSpace,
+        player.postion, board.spaces))
+        whatDo(player,board)
+        return
+
+    # Bot failed to roll a double and continues their sentence
+    else:
+        speak("Doubles not rolled. Jail time continues.")
+        player.jail = player.jail + 1
+        return
+
+
 def botLandOnProp(player, position, board):
     typ = position[0]
     if (typ == "Prop"):
@@ -561,6 +606,19 @@ def botLandOnProp(player, position, board):
         typ = "utility"
     elif (typ == "RR"):
         typ = "railroad"
+
+    if (int(position[8]) == 0):
+        if (player.money < int(position[3])):
+            speak("Could not afford this %s." % (typ))
+            return
+
+    if (int(position[8]) == 1):
+        if position in player.properties:
+            speak("%s owns this %s." % (player.name, typ))
+            return
+        else:
+            payRentProp(player, position, board)
+            return
 
     if typ == "property":
         print("(Color: %s, Owned of this color: %s out of %s available and %s total)"
@@ -577,18 +635,6 @@ def botLandOnProp(player, position, board):
         say("Type is %s, %s owns %s out of %s available and %s total" % (position[2], player.name,
         colOwned(player, position), totColOwned(position, board), position[9]))
 
-    if (int(position[8]) == 0):
-        if (player.money < int(position[3])):
-            speak("Could not afford this %s." % (typ))
-            return
-
-    if (int(position[8]) == 1):
-        if position in player.properties:
-            speak("%s owns this %s." % (player.name, typ))
-            return
-        else:
-            payRentProp(player, position, board)
-            return
 
     choice = botPropertyChoice(player, position, board)
     if (choice == 1):
