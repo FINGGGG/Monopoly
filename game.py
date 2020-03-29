@@ -190,6 +190,11 @@ def landOnProp(player, position, board):
             return
 
     print("(Color: %s, Owned of this color: %s out of %s available and %s total)" % (position[2], colOwned(player, position), totColOwned(position, board), position[9]))
+    say("Color is %s, %s owns %s out of %s available and %s total." % (position[2], player.name, colOwned(player, position), totColOwned(position, board), position[9]))
+    if (instructions == 1):
+        say("This %s is not owned and costs $%s (you have $%s), to purchase, press y. To decline, press any other key.\n" % (typ, int(position[3]), player.money))
+    else:
+        say("It costs $%s, and you have %s." % (int(position[3]), player.money))
     choice = input("This %s is not owned and costs $%s (you have $%s), to purchase, press y. To decline, press any other key.\n" % (typ, int(position[3]), player.money))
 
     if (choice == "y" or choice == "Y"):
@@ -211,6 +216,12 @@ def landOnProp(player, position, board):
 
 # Returns the number of a certain Color are owned by all players based on
 # the Color from the current position.
+def bankrupt(player, board):
+    speak("%s has gone bankrupt!" % player.name)
+    players.remove(player)
+    board.counter += 1
+
+
 def totColOwned(position, board):
     counter = int(position[9])
     col = position[2]
@@ -315,7 +326,7 @@ def jail(player, board):
 
     # If they haven't, they can choose to roll for doubles, use GooJF Card, or Pay.
     while True:
-        choice = input("(R)oll dice, (U)se card, or (P)ay $50 fine.\n")
+        choice = input("Enter 'R' to roll dice, 'U' to use card, or 'P' to pay $50 fine.\n")
         if (choice == "R" or choice == "r"):
             result = roll()
             player.roll = result[0]
@@ -347,7 +358,7 @@ def jail(player, board):
             # If not, notify them and reset jail func w/o increasing jail count.
             else:
                 speak("No get out of jail free cards available.")
-                jail(player,board)
+                continue
 
         # Releases the player if they can afford the $50 fee.
         elif (choice == "P" or choice == "p"):
@@ -359,7 +370,7 @@ def jail(player, board):
                 return
             else:
                 speak("Not enough money for the fee!")
-                jail(player,board)
+                continue
 
         else:
             speak("Please enter an R, U, or P")
@@ -371,6 +382,8 @@ def turn(player, board):
         time.sleep(1)
         speak("\n%s takes their turn!" % player.name)
         botTurn(player, board)
+        if (player.money < 1):
+            bankrupt(player, board)
         return
 
     doub = 0
@@ -381,27 +394,31 @@ def turn(player, board):
 
     while True:
         speak("\nIt's %s's turn!" % (player.name))
-        print("Enter <S> to view status, <P> to view your properties, <A> to view every player's properties, or <R> to roll dice.")
-        choice = input()
+        choice = ask("Enter 'S' to view all player statuses, 'Y' to view your own status, 'P' to view your properties, 'A.' to view every player's properties, or 'R' to roll dice.",
+         "Please enter an S, P, A, or R", ["s","p","a","r","y"], True, True)
+        #choice = input()
 
-        if choice == "S" or choice == "s":
+        if choice == "s":
             for p in board.players:
                 speak(p.status())
 
-        elif choice == "P" or choice == "p":
+        if choice == "y":
+            speak(player.status())
+
+        elif choice == "p":
             speak(player.viewProps())
 
-        elif choice == "A" or choice == "a":
+        elif choice == "a":
             board.viewProps()
 
-        elif choice == "R" or choice == "r":
+        elif choice == "r":
             result = roll()
             player.roll = result[0]
             doub = result[1]
             #print(result)
             pos = detPos(player,result[0],board)
 
-            if result == 8 or result == 11:
+            if result[0] == "8" or result[0] == "11":
                 speak("%s rolled an %d!" % (player.name, result[0]))
 
             else:
@@ -414,11 +431,12 @@ def turn(player, board):
                     speak("%s is now on Just Visiting %s" % (player.name, currSpace))
             break
 
-        else:
-            speak("Please enter an S, P, A, or R")
 
     whatDo(player,board)
     player.prevPos = player.position
+    if (player.money < 1):
+        bankrupt(player, board)
+        return
 
     if (doub):
         turn(player,board)
@@ -437,7 +455,7 @@ def botTurn(player, board):
         #speak(result)
         pos = detPos(player,result[0],board)
 
-        if result == 8 or result == 11:
+        if result[0] == "8" or result[0] == "11":
             speak("%s rolled an %d!" % (player.name, result[0]))
 
         else:
@@ -460,7 +478,13 @@ def botLandOnProp(player, position, board):
         typ = "utility"
     elif (typ == "RR"):
         typ = "railroad"
-    print("(Color: %s, Owned of this color: %s out of %s available and %s total)" % (position[2], colOwned(player, position), totColOwned(position, board), position[9]))
+
+    if typ == "property":
+        print("(Color: %s, Owned of this color: %s out of %s available and %s total)" % (position[2], colOwned(player, position), totColOwned(position, board), position[9]))
+        say("Color is %s, %s owns %s out of %s available and %s total" % (position[2], player.name, colOwned(player, position), totColOwned(position, board), position[9]))
+    else:
+        print("(Type: %s, Owned of this color: %s out of %s available and %s total)" % (position[2], colOwned(player, position), totColOwned(position, board), position[9]))
+        say("Type is %s, %s owns %s out of %s available and %s total" % (position[2], player.name, colOwned(player, position), totColOwned(position, board), position[9]))
 
     if (int(position[8]) == 0):
         if (player.money < int(position[3])):
@@ -541,11 +565,13 @@ class Board:
     players = []
     fate = []
     crate = []
+    counter = 0
     def __init__(self, spaces, places, fate, crate):
         self.spaces = spaces
         self.places = places
         self.fate = fate
         self.crate = crate
+        self.counter = 0
 
     def viewProps(self):
         #mainPhrase = ""
@@ -580,16 +606,18 @@ class Player:
             if prop in properties:
                 properties.remove(prop)
     def status(self): ## 40 represents # of spaces, change if modded
-        phrase = ("%s: Money: $%s, Position: %s (%d/40)" %
+        phrase = ("%s: Money: $%s, Position: %s (%d of 40)" %
                 (self.name, self.money, self.posName, self.position + 1))
-        props = ", Properties: "
+        props = ", and no properties."
         counter = 0
-        for p in self.properties:
-            if len(self.properties) > 1 and counter < len(self.properties) - 1:
-                props = props + str(p[1]) + ", "
-            else:
-                props = props + str(p[1])
-            counter = counter + 1
+        if (len(self.properties)):
+            props = ", Properties: "
+            for p in self.properties:
+                if len(self.properties) > 1 and counter < len(self.properties) - 1:
+                    props = props + str(p[1]) + ", "
+                else:
+                    props = props + str(p[1])
+                counter = counter + 1
         phrase = phrase + props
         return phrase
 
@@ -600,7 +628,7 @@ class Player:
         elif (color == "RR"):
             totCnt = 4
         if(count > 0):
-            phrase = phrase + (" %ss(%d/%s): " % (color, count, totCnt))
+            phrase = phrase + (" %ss(%d of %s): " % (color, count, totCnt))
             counter = 0
             for p in self.properties:
                 if color in p:
@@ -804,16 +832,19 @@ def say(line):
 def ask(line, errorLine, allowedInputs, include, inst):
     asked = 0
     result = ""
-    if not(line.endswith("\n")):
-        line = line + "\n"
-    if not(errorLine.endswith("\n")):
-        errorLine = errorLine + "\n"
+    #if not(line.endswith("\n")):
+    #    line = line + "\n"
+    #if not(errorLine.endswith("\n")):
+    #    errorLine = errorLine + "\n"
 
     while True:
         if asked == 0:
-            if not inst:
+            print(line)
+            if (not inst) or (instructions == 1):
                 say(line)
-            result = input(line)
+            result = input()
+            if inst:
+                result = result.lower()
             asked = 1
         else:
             result = input("")
@@ -866,15 +897,24 @@ for x in range(playerNum):
 
 for x in range(botNum):
     nameString = "Bot " + str(x+1)
+    for y in range(playerNum):
+        if players[y].name == nameString:
+            nameString = "Real Bot " + str(x+1)
     bot = Player(nameString, pinf[0], 1)
     players.append(bot)
     names.append(nameString)
 
-speak("Added %d bots to the game" % botNum)
+if (botNum > 1):
+    speak("Added %d bots to the game" % botNum)
+elif (botNum == 1):
+    speak("Added 1 bot to the game")
+
 
 gameBoard.players = players
-counter = 0
 while True:
-    choice = counter % len(players)
+    if (len(players) == 1):
+        speak("%s is the only remaining player! Game over." % (players[0].name))
+        break
+    choice = gameBoard.counter % len(players)
     turn(players[choice], gameBoard)
-    counter = counter + 1
+    gameBoard.counter += 1
