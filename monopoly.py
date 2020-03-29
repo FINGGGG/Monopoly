@@ -42,14 +42,14 @@ def changePos(player, pos, board):
         if (player.jail == 0):
             passGo(player)
 
-    if player.position >= 40:
-        player.position = player.position - 40
+    if player.position >= board.spaces:
+        player.position = player.position - board.spaces
 
         if (player.jail == 0):
             passGo(player)
 
     if player.position < 1:
-        player.position = 40 - player.position
+        player.position = board.spaces - player.position
 
     player.position = int(pos)
     player.posName = board.places[player.position][1]
@@ -62,10 +62,10 @@ def detPos(player, roll, board):
     #print(player.position)
 
     if player.position < 1:
-        player.position = 40 - player.position
+        player.position = board.spaces - player.position
 
-    if player.position >= 40:
-        player.position = player.position - 40
+    if player.position >= board.spaces:
+        player.position = player.position - board.spaces
 
         if (player.jail == 0):
             passGo(player)
@@ -372,7 +372,7 @@ def jail(player, board):
                 speak("Doubles rolled! Jail escaped!")
                 pos = detPos(player,result[0],board)
                 currSpace = pos[1]
-                speak("%s is now on %s" % (player.name, currSpace))
+                speak("%s is now on %s (%d of %d)" % (player.name, currSpace, player.postion+1, board.spaces))
                 whatDo(player,board)
                 return
 
@@ -435,10 +435,10 @@ def turn(player, board):
 
         if choice == "s":
             for p in board.players:
-                speak(p.status())
+                speak(p.status(board))
 
         if choice == "y":
-            speak(player.status())
+            speak(player.status(board))
 
         elif choice == "p":
             speak(player.viewProps())
@@ -460,10 +460,10 @@ def turn(player, board):
                 speak("%s rolled a %d!" % (player.name, result[0]))
             currSpace = pos[1]
             if currSpace != "Jail":
-                speak("%s is now on %s" % (player.name, currSpace))
+                speak("%s is now on %s (%d of %d)" % (player.name, currSpace, player.position, board.spaces))
             else:
                 if player.jail == 0:
-                    speak("%s is now on Just Visiting %s" % (player.name, currSpace))
+                    speak("%s is now on Just Visiting %s (%d of %d)" % (player.name, currSpace, player.position, board.spaces))
             break
 
 
@@ -500,7 +500,7 @@ def botTurn(player, board):
         else:
             speak("%s rolled a %d!" % (player.name, result[0]))
         currSpace = pos[1]
-        speak("%s is now on %s" % (player.name, currSpace))
+        speak("%s is now on %s (%d of %d)" % (player.name, currSpace, player.position, board.spaces))
 
         whatDo(player,board)
         player.prevPos = player.position
@@ -660,9 +660,9 @@ class Player:
         self.rentGot = 0
         self.rentGotFrom = ""
 
-    def status(self): ## 40 represents # of spaces, change if modded
-        phrase = ("%s: Money: $%s, Position: %s (%d of 40)" %
-                (self.name, self.money, self.posName, self.position + 1))
+    def status(self, board):
+        phrase = ("%s: Money: $%s, Position: %s (%d of %d)" %
+                (self.name, self.money, self.posName, self.position + 1, board.spaces))
         props = ", and no properties."
         counter = 0
         if (len(self.properties)):
@@ -752,6 +752,8 @@ class Player:
             phrase = self.vpassist(utlCnt, "Util", phrase)
         if(rrdCnt > 0):
             phrase = self.vpassist(rrdCnt, "RR", phrase)
+        if (phrase == ("\n%s's properties: " % (self.name))):
+            phrase = phrase + "\nNone"
         return phrase
 
     def getProps(self):
@@ -809,13 +811,13 @@ spaces_inf.close()
 #print(spaces)
 
 ## read board.txt
-board_inf = open("board.txt", "r")
-binf = board_inf.readlines()
-counter = 0
-for index in binf:
-    binf[counter] = binf[counter].strip()
-    counter = counter + 1
-board_inf.close()
+#board_inf = open("board.txt", "r")
+#binf = board_inf.readlines()
+#counter = 0
+#for index in binf:
+#    binf[counter] = binf[counter].strip()
+#    counter = counter + 1
+#board_inf.close()
 
 ## read fate.txt
 fate_inf = open("fate.txt", "r")
@@ -836,7 +838,7 @@ for index in cinf:
 crate_inf.close()
 
 ## use board.txt to make Board instance to be used all game
-gameBoard = Board(binf[0], spaces, finf, cinf)
+gameBoard = Board(len(spaces), spaces, finf, cinf)
 
 ## read player.txt
 play_inf = open("player.txt", "r")
