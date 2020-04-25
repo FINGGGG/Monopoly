@@ -368,7 +368,8 @@ def jail(player, board):
 # roll the dice.
 def turn(player, board):
     if (player.bot == 1):
-        time.sleep(1)
+        if not ttsEnabled:   # only sleep if narration is off
+            time.sleep(1)
         speak("\n%s takes their turn!" % player.name)
         botTurn(player, board)
         return
