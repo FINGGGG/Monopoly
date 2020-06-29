@@ -106,7 +106,7 @@ def landOnCrate(player, board):
     counter = 0
 
     for c in board.crate:
-        if c[3] == 0:
+        if c[3] == "0":
             avail.append(c)
             found = 1
         counter = counter + 1
@@ -115,7 +115,7 @@ def landOnCrate(player, board):
     if found == 0:
         avail = board.crate
         for c in board.crate:
-            c[3] == 1
+            c[3] == "1"
 
 
     randNum = random.randint(0, counter - 1)
@@ -129,7 +129,7 @@ def landOnFate(player, board):
     found = 0
     counter = 0
     for c in board.fate:
-        if c[3] == 0:
+        if c[3] == "0":
             avail.append(c)
             found = 1
         counter = counter + 1
@@ -138,7 +138,7 @@ def landOnFate(player, board):
     if found == 0:
         avail = board.fate
         for c in board.crate:
-            c[3] == 1
+            c[3] == "1"
 
     randNum = random.randint(0, counter - 1)
     given = avail[randNum]
@@ -218,6 +218,76 @@ def bankrupt(player, board):
 
     # Ensure that the proper order of player turns is preserved after removal
     board.counter += 1
+
+def build(player, board):
+    #if not board.places[1] in player.properties:
+    #    player.changeProperty(board.places[1], 1)
+    #    player.changeProperty(board.places[3], 1)
+    mons = len(player.monopolies)
+    props = []
+    phrase = ""
+    colMin = 10
+    if (mons == 0):
+        speakFast("%s has %d monopolies." % (player.name, mons))
+        return
+    elif (mons == 1):
+        color = player.monopolies[0]
+        i = 0
+        for prop in player.properties:
+            if prop[2] == color:
+                props.append(prop)
+                if int(prop[6]) < colMin:
+                    colMin = int(prop[6])
+                    print("colMin",colMin)
+
+        print(props)
+        for prop in props:
+            print("prop", prop)
+            if int(prop[6]) > colMin:
+                print("has %d" % int(prop[6]))
+                props.remove(prop)
+            elif int(prop[7]) != 0:
+                props.remove(prop)
+            else:
+                i += 1
+                phrase += ("%s [%d] " % (prop[1], i))
+
+        if i == 0:
+            speakFast("None of the properties are eligible for building!")
+            return
+
+        numList = list(map(str, range(1, i+1)))
+        choice = int(ask("Choose a property to build on using the number next to it, " + phrase,
+        "Please choose an appropriate number.", numList, True, True))
+        choice -= 1
+        choice = props[choice]
+        price = int(choice[17])
+        if (price > player.money):
+            speakFast("Cannot afford to build on %s!" % choice[1])
+            return
+        player.changeMoney((0 - price))
+        houses = int(choice[6])
+        hotel = 0
+        if houses < 4:
+            houses += 1
+            speakFast("%s paid %d to add a house to %s." % (player.name, price, choice[1]))
+        else:
+            houses = 0
+            hotel = 1
+            speakFast("%s paid %d to add a hotel to %s." % (player.name, price, choice[1]))
+
+        for p in board.places:
+            if p[1] == choice[1]:
+                p[6] = houses
+                p[7] = hotel
+
+        for p in player.properties:
+            if p[1] == choice[1]:
+                p[6] = houses
+                p[7] = hotel
+
+
+
 
 # Returns the number of a certain Color are owned by all players based on
 # the Color from the current position.
@@ -381,7 +451,7 @@ def jail(player, board):
 
     # If they haven't, they can choose to roll for doubles, use GooJF Card, or Pay.
     while True:
-        choice = input("Enter 'R' to roll dice, 'U' to use card, or 'P' to pay $50 fine.\n")
+        choice = ask("Enter 'R' to roll dice, 'U' to use card, or 'P' to pay $50 fine.\n", "Please enter an R, U, or P.", ["r", "u", "p"], True, True)
 
         # Player attempts to escape jail by rolling doubles
         if (choice == "R" or choice == "r"):
@@ -457,8 +527,8 @@ def turn(player, board):
 
     while True:
         speak("\nIt's %s's turn!" % (player.name))
-        choice = ask("Enter 'S' to view all player statuses, 'Y' to view your own status, 'P' to view your properties, 'A.' to view every player's properties, or 'R' to roll dice.",
-         "Please enter an S, P, A, or R", ["s","p","a","r","y"], True, True)
+        choice = ask("Enter 'S' to view all player statuses, 'Y' to view your own status, 'P' to view your properties, 'A.' to view every player's properties, 'B' to build, or 'R' to roll dice.",
+         "Please enter an S, Y, P, A, B, or R", ["s","p","a","r","y","b"], True, True)
 
         # view status of all players, which includes money, position, and
         # overview of properties
@@ -479,6 +549,9 @@ def turn(player, board):
         elif choice == "a":
             board.viewProps()
 
+        elif choice == "b":
+            build(player, board)
+
         # roll the dice!
         elif choice == "r":
             result = roll()
@@ -494,7 +567,7 @@ def turn(player, board):
 
             pos = detPos(player,result[0],board)
 
-            if result[0] == "8" or result[0] == "11":
+            if result[0] == 8 or result[0] == 11:
                 speak("%s rolled an %d!" % (player.name, result[0]))
 
             else:
@@ -538,7 +611,7 @@ def botTurn(player, board):
         doub = result[1]
         pos = detPos(player,result[0],board)
 
-        if result[0] == "8" or result[0] == "11":
+        if result[0] == 8 or result[0] == 11:
             speak("%s rolled an %d!" % (player.name, result[0]))
 
         else:
@@ -718,6 +791,7 @@ class Board:
 class Player:
     def __init__(self, name, money, bot):
         self.properties = []
+        self.monopolies = []
         self.cards = 0
         self.doubles = 0
         self.rrs = 0
@@ -748,6 +822,7 @@ class Player:
         if add == 0:
             if prop in self.properties:
                 self.properties.remove(prop)
+        self.checkMonopolies(prop)
 
     def resetSummary(self):
         self.cardUsed = ""
@@ -759,7 +834,7 @@ class Player:
 
     def status(self, board):
         phrase = ("%s: Money: $%s, Position: %s (%d of %d)" %
-                (self.name, self.money, self.posName, self.position + 1, board.spaces))
+                (self.name, self.money, self.posName, self.position, board.spaces))
         props = ", and no properties."
         counter = 0
         if (len(self.properties)):
@@ -786,7 +861,10 @@ class Player:
                 if color in p:
                     phrase = phrase + ("%s" % (p[1]))
                     if (int(p[6]) > 0):
-                        phrase = phrase + (" with %d houses, " % (p[6]))
+                        if (int(p[6]) > 1):
+                            phrase = phrase + (" with %d houses, " % (p[6]))
+                        else:
+                            phrase = phrase + (" with %d house, " % (p[6]))
                     elif (int(p[7]) > 0):
                         phrase = phrase + (" with a hotel, ")
                     elif (count > 1 and counter < count):
@@ -891,6 +969,15 @@ class Player:
 
         return result
 
+    def checkMonopolies(self, prop):
+        props = self.getProps()
+        color = prop[2]
+        if (color in self.monopolies):
+            self.monopolies.remove(color)
+
+        if (int(props[color]) == int(prop[9])):
+            self.monopolies.append(color)
+
 
 
 ## ---------- SET UP ---------- ##
@@ -963,11 +1050,13 @@ def speakFast(line):
 #TTS the given line
 def say(line):
     if ttsEnabled == 1:
-        if engine != "Mac":
+        if secondEngine == "":
             engine.say(str(line))
             engine.runAndWait()
             return
-        subprocess.Popen(["say", line])
+        secondEngine.say(str(line))
+        secondEngine.runAndWait()
+        return
 
 #TTS the given line and take input, and loop until input is correct
 # include is True of False if allowedInputs should be checked for inclusion (True)
@@ -1027,8 +1116,13 @@ asked = 0
 playerNum = int(ask("How many human players?", "Please enter a number between 1 and 8",
 ["1","2","3","4","5","6","7","8"], include=True, inst=False))
 
-botNumList = list(map(str, range(1, 9 - int(playerNum) + 1)))
-botError = "Please enter a number between 0 and %d" % (9 - int(playerNum))
+if (playerNum != 1):
+    botNumList = list(map(str, range(0, 9 - int(playerNum) + 1)))
+    botError = "Please enter a number between 0 and %d" % (9 - int(playerNum))
+else:
+    botNumList = list(map(str, range(1, 9 - int(playerNum) + 1)))
+    botError = "Please enter a number between 1 and %d" % (9 - int(playerNum))
+
 botNum = int(ask("How many bots?", botError, botNumList, include=True, inst=False))
 
 
