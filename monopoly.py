@@ -984,7 +984,7 @@ class Player:
 ##(program execution begins here)##
 
 ## read places.txt
-spaces_inf = open("places.txt", "r")
+spaces_inf = open("settings/places.txt", "r")
 sinf = spaces_inf.readlines()
 spaces = []
 counter = 0
@@ -994,7 +994,7 @@ for index in sinf:
 spaces_inf.close()
 
 ## read fate.txt
-fate_inf = open("fate.txt", "r")
+fate_inf = open("settings/fate.txt", "r")
 finf = fate_inf.readlines()
 counter = 0
 for index in finf:
@@ -1003,7 +1003,7 @@ for index in finf:
 fate_inf.close()
 
 ## read crate.txt
-crate_inf = open("crate.txt", "r")
+crate_inf = open("settings/crate.txt", "r")
 cinf = crate_inf.readlines()
 counter = 0
 for index in cinf:
@@ -1015,7 +1015,7 @@ crate_inf.close()
 gameBoard = Board(len(spaces), spaces, finf, cinf)
 
 ## read player.txt
-play_inf = open("player.txt", "r")
+play_inf = open("settings/player.txt", "r")
 pinf = play_inf.readlines()
 counter = 0
 for index in pinf:
