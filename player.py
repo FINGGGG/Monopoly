@@ -187,3 +187,22 @@ class Player(object):
 
         if (int(props[color]) == int(prop[9])):
             self.monopolies.append(color)
+
+    def refreshMonopolies(self):
+        props = self.getProps()
+        if props["Brown"] == 2:
+            self.monopolies.append("Brown")
+        if props["Light Blue"] == 3:
+            self.monopolies.append("Light Blue")
+        if props["Pink"] == 3:
+            self.monopolies.append("Pink")
+        if props["Orange"] == 3:
+            self.monopolies.append("Orange")
+        if props["Red"] == 3:
+            self.monopolies.append("Red")
+        if props["Yellow"] == 3:
+            self.monopolies.append("Yellow")
+        if props["Green"] == 3:
+            self.monopolies.append("Green")
+        if props["Blue"] == 2:
+            self.monopolies.append("Blue")

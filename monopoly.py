@@ -7,6 +7,7 @@ import time
 import os
 import subprocess
 import platform
+import copy
 
 from board import Board
 from player import Player
@@ -226,40 +227,48 @@ def build(player, board):
     #if not board.places[1] in player.properties:
     #    player.changeProperty(board.places[1], 1)
     #    player.changeProperty(board.places[3], 1)
+    player.refreshMonopolies()
     mons = len(player.monopolies)
     props = []
     phrase = ""
     colMin = 10
+    #print("Here")
     if (mons == 0):
         speakFast("%s has %d monopolies." % (player.name, mons))
         return
-    elif (mons == 1):
-        color = player.monopolies[0]
+    elif (mons >= 1):
+        #color = player.monopolies[0]
         i = 0
         for prop in player.properties:
-            if prop[2] == color:
-                props.append(prop)
-                if int(prop[6]) < colMin:
-                    colMin = int(prop[6])
-                    print("colMin",colMin)
+            if prop[2] in player.monopolies:
+                if int(prop[7]) == 0: # HAS A HOTEL
+                    props.append(prop)
+                    if int(prop[6]) < colMin:
+                        colMin = int(prop[6])
+                        #print("colMin",colMin)
 
-        print(props)
-        for prop in props:
-            print("prop", prop)
+        #print(props)
+        temp = copy.deepcopy(props)
+        for prop in temp:
+            #print("prop", prop)
             if int(prop[6]) > colMin:
-                print("has %d" % int(prop[6]))
+                #print("has %d" % int(prop[6]))
                 props.remove(prop)
-            elif int(prop[7]) != 0:
+                continue
+            if int(prop[7]) != 0:
+                #print("hotel")
                 props.remove(prop)
-            else:
-                i += 1
-                phrase += ("%s [%d] " % (prop[1], i))
+                continue
+            i += 1
+            #print("i: %d" % i)
+            phrase += ("%s [%d] " % (prop[1], i))
 
         if i == 0:
             speakFast("None of the properties are eligible for building!")
             return
 
         numList = list(map(str, range(1, i+1)))
+        #print("numlist",numList)
         choice = int(ask("Choose a property to build on using the number next to it, " + phrase,
         "Please choose an appropriate number.", numList, True, True))
         choice -= 1
@@ -378,6 +387,17 @@ def useCard(given, player, board):
 # property, then gives that amount to the property owner.
 def payRentProp(player, position, board):
     amt = position[4]
+    if int(position[6]) == 1:
+        amt = postion[12]
+    elif int(position[6]) == 2:
+        amt = postion[13]
+    elif int(position[6]) == 3:
+        amt = postion[14]
+    elif int(position[6]) == 4:
+        amt = postion[15]
+    if int(position[7]) > 0:
+        amt = position[16]
+
     for p in board.players:
         if position in p.properties:
 
@@ -530,8 +550,12 @@ def turn(player, board):
 
     while True:
         speak("\nIt's %s's turn!" % (player.name))
-        choice = ask("Enter 'S' to view all player statuses, 'Y' to view your own status, 'P' to view your properties, 'A.' to view every player's properties, 'B' to build, or 'R' to roll dice.",
-         "Please enter an S, Y, P, A, B, or R", ["s","p","a","r","y","b"], True, True)
+        if DEBUG:
+            choice = ask("Enter 'S' to view all player statuses, 'Y' to view your own status, 'P' to view your properties, 'A.' to view every player's properties, 'B' to build, 'R' to roll dice, or 'D' to debug move",
+            "Please enter an S, Y, P, A, B, or R", ["s","p","a","r","y","b","d"], True, True)
+        else:
+            choice = ask("Enter 'S' to view all player statuses, 'Y' to view your own status, 'P' to view your properties, 'A.' to view every player's properties, 'B' to build, or 'R' to roll dice.",
+            "Please enter an S, Y, P, A, B, or R", ["s","p","a","r","y","b"], True, True)
 
         # view status of all players, which includes money, position, and
         # overview of properties
@@ -556,10 +580,23 @@ def turn(player, board):
             build(player, board)
 
         # roll the dice!
-        elif choice == "r":
-            result = roll()
-            player.roll = result[0]
-            doub = result[1]
+        elif choice == "r" or choice == "d":
+            if choice == "d":
+                result = [0,False]
+                result[0] = input("How many spaces to move?")
+                while not(result[0].isnumeric()):
+                    result[0] = input("How many spaces to move?")
+                result[0] = int(result[0])
+                player.roll = result[0]
+                ##doub = input("Double? (Y)")
+                ##result[1] = False
+                ##if doub.lower() == "y":
+                ##    result[1] = True
+
+            else:
+                result = roll()
+                player.roll = result[0]
+                doub = result[1]
 
             # If player rolls 3 doubles, they go to jail
             if player.doubles > 2:
@@ -874,7 +911,7 @@ def ask(line, errorLine, allowedInputs, include, inst):
         else:
             result = input("")
         if (include):
-            if result in allowedInputs:
+            if (result in allowedInputs):
                 break
             else:
                 speakFast(errorLine)
@@ -902,11 +939,17 @@ else:
     ttsEnabled = 0
     instructions = 0
 
+DEBUG = True # make false when released
+
 ## create players
 players = []
 asked = 0
-playerNum = int(ask("How many human players?", "Please enter a number between 1 and 8",
-["1","2","3","4","5","6","7","8"], include=True, inst=False))
+playerNum = ask("How many human players?", "Please enter a number between 1 and 8",
+["1","2","3","4","5","6","7","8"], include=True, inst=False)
+while not playerNum.isnumeric():
+    playerNum = ask("How many human players?", "Please enter a number between 1 and 8",
+    ["1","2","3","4","5","6","7","8"], include=True, inst=False)
+playerNum = int(playerNum)
 
 if (playerNum != 1):
     botNumList = list(map(str, range(0, 9 - int(playerNum) + 1)))
@@ -915,7 +958,10 @@ else:
     botNumList = list(map(str, range(1, 9 - int(playerNum) + 1)))
     botError = "Please enter a number between 1 and %d" % (9 - int(playerNum))
 
-botNum = int(ask("How many bots?", botError, botNumList, include=True, inst=False))
+botNum = ask("How many bots?", botError, botNumList, include=True, inst=False)
+while not botNum.isnumeric():
+    botNum = ask("How many bots?", botError, botNumList, include=True, inst=False)
+botNum = int(botNum)
 
 
 counter = 0
